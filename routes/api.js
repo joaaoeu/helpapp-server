@@ -107,9 +107,9 @@ router.post('/members', verifySuperAdminToken, (req, res) => {
       } else {
         let user = new User(userData);
         
-        user.save((error, registeredUser) => {
-          if(error) {
-            console.log(error);
+        user.save((err, registeredUser) => {
+          if(err) {
+            console.log(err);
           } else {
             res.status(200).send({
               user: {
@@ -123,6 +123,28 @@ router.post('/members', verifySuperAdminToken, (req, res) => {
       }
     });  
   }
+});
+
+// ENDPOINT: [GET] /members
+router.get('/members', verifySuperAdminToken, (req, res) => {
+  User.find({}, function(err, members) {
+    if (!err) {
+      members = members.map((member) => {
+        return {
+          _id: member._id,
+          name: member.name,
+          email: member.email,
+          userType: member.userType
+        }
+      }).filter((member) => {
+        return member.userType !== userTypes.SUPER_ADMIN
+      });
+      
+      res.status(200).json(members);
+    } else {
+      console.log(err);
+    }
+  });
 });
 
 module.exports = router;
