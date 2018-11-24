@@ -88,6 +88,7 @@ router.post('/login', (req, res) => {
             let token = jwt.sign(payload, jwtSecretKey)
             res.status(200).send({
               user: {
+                _id: user._id,
                 name: user.name,
                 email: user.email,
                 userType: user.userType
@@ -121,8 +122,9 @@ router.post('/members', verifySuperAdminToken, (req, res) => {
             if(err) {
               console.log(err);
             } else {
-              res.status(200).send({
+              res.status(201).send({
                 user: {
+                  _id: registeredUser._id,
                   name: registeredUser.name,
                   email: registeredUser.email,
                   userType: registeredUser.userType
@@ -138,7 +140,7 @@ router.post('/members', verifySuperAdminToken, (req, res) => {
 
 // ENDPOINT: [GET] /members
 router.get('/members', verifySuperAdminToken, (req, res) => {
-  User.find({}, function(err, members) {
+  User.find({}).sort({_id: 'desc'}).exec(function(err, members) {
     if (!err) {
       members = members.map((member) => {
         return {
@@ -156,6 +158,23 @@ router.get('/members', verifySuperAdminToken, (req, res) => {
       console.log(err);
     }
   });
+});
+
+// ENDPOINT: [DELETE] /members
+router.delete('/members', verifySuperAdminToken, (req, res) => {
+  let userData = req.body;
+  
+  if(userData.userType !== userTypes.ADMIN && userData.userType !== userTypes.DEFAULT) {
+    res.status(400).send({message: 'Can\'t delete member!'});
+  } else {
+    User.findOneAndDelete({ _id: userData._id }, function(err) {
+      if (!err) {
+        res.status(204).send();
+      } else {
+        res.status(400).send({message: 'Can\'t delete member!'});
+      }
+    });
+  }
 });
 
 module.exports = router;
