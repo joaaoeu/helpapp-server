@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const jwtSecretKey = 'helpappTopSecretKey';
 
@@ -76,18 +77,24 @@ router.post('/login', (req, res) => {
     if (err) {
       console.log(err);
     } else {
-      if (!user || user.password !== userData.password) {
+      if (!user) {
         res.status(401).send({message: 'Email or password is incorrect!'});
       } else {
-        let payload = { user };
-        let token = jwt.sign(payload, jwtSecretKey)
-        res.status(200).send({
-          user: {
-            name: user.name,
-            email: user.email,
-            userType: user.userType
-          },
-          token
+        bcrypt.compare(userData.password, user.password, function(err, equal) {
+          if(!equal) {
+            res.status(401).send({message: 'Email or password is incorrect!'});
+          } else {
+            let payload = { user };
+            let token = jwt.sign(payload, jwtSecretKey)
+            res.status(200).send({
+              user: {
+                name: user.name,
+                email: user.email,
+                userType: user.userType
+              },
+              token
+            });  
+          }
         });
       }
     }
@@ -105,20 +112,24 @@ router.post('/members', verifySuperAdminToken, (req, res) => {
       if (user) {
         res.status(400).send({message: 'Email is being used by another member!'});
       } else {
-        let user = new User(userData);
-        
-        user.save((err, registeredUser) => {
-          if(err) {
-            console.log(err);
-          } else {
-            res.status(200).send({
-              user: {
-                name: registeredUser.name,
-                email: registeredUser.email,
-                userType: registeredUser.userType
-              }
-            });
-          }
+        bcrypt.hash(userData.password, 10, function(err, hash) {
+          userData.password = hash;
+          
+          let user = new User(userData);
+          
+          user.save((err, registeredUser) => {
+            if(err) {
+              console.log(err);
+            } else {
+              res.status(200).send({
+                user: {
+                  name: registeredUser.name,
+                  email: registeredUser.email,
+                  userType: registeredUser.userType
+                }
+              });
+            }
+          });
         });
       }
     });  
