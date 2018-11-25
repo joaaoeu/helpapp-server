@@ -1,106 +1,10 @@
+const { userTypes, verifySuperAdminToken } = require('../auth');
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const jwtSecretKey = 'helpappTopSecretKey';
-
-const userTypes = {
-  SUPER_ADMIN: 1,
-  ADMIN: 2,
-  DEFAULT: 3
-};
 
 // Models
 const User = require('../models/user');
-
-// MongoDB config
-const db = 'mongodb://userhelpapp:passhelpapp1@ds115154.mlab.com:15154/helpappdb';
-mongoose.connect(db, { useNewUrlParser: true }, err => {
-  if(err) {
-    console.error('# Connection to MongoDB failed ==> ' + err);
-  } else {
-    console.log('# Connected to MongoDB!');
-  }
-});
-
-// Verify JWT
-function verifyToken(req, res, next) {
-  if(!req.headers.authorization) return res.status(401).send('Unauthorized');
-  
-  let token = req.headers.authorization.split(' ')[1];
-  if(token === 'null') return res.status(401).send('Unauthorized');
-  
-  let payload = jwt.verify(token, jwtSecretKey);
-  if(!payload || !payload.user)
-    return res.status(401).send('Unauthorized');
-  
-  req.user = payload.user;
-  next();
-}
-
-// Verify Admin JWT
-function verifyAdminToken(req, res, next) {
-  if(!req.headers.authorization) return res.status(401).send('Unauthorized');
-  
-  let token = req.headers.authorization.split(' ')[1];
-  if(token === 'null') return res.status(401).send('Unauthorized');
-  
-  let payload = jwt.verify(token, jwtSecretKey);
-  if(!payload || !payload.user || (payload.user.userType !== userTypes.SUPER_ADMIN && payload.user.userType !== userTypes.ADMIN))
-    return res.status(401).send('Unauthorized');
-  
-  req.user = payload.user;
-  next();
-}
-
-// Verify Super Admin JWT
-function verifySuperAdminToken(req, res, next) {
-  if(!req.headers.authorization) return res.status(401).send('Unauthorized');
-  
-  let token = req.headers.authorization.split(' ')[1];
-  if(token === 'null') return res.status(401).send('Unauthorized');
-  
-  let payload = jwt.verify(token, jwtSecretKey);
-  if(!payload || !payload.user || payload.user.userType !== userTypes.SUPER_ADMIN)
-    return res.status(401).send('Unauthorized');
-  
-  req.user = payload.user;
-  next();
-}
-
-// ENDPOINT: [POST] /login
-router.post('/login', (req, res) => {
-  let userData = req.body;
-  
-  User.findOne({email: userData.email}, (err, user) => {
-    if (err) {
-      console.log(err);
-    } else {
-      if (!user) {
-        res.status(401).send({message: 'Email or password is incorrect!'});
-      } else {
-        bcrypt.compare(userData.password, user.password, function(err, equal) {
-          if(!equal) {
-            res.status(401).send({message: 'Email or password is incorrect!'});
-          } else {
-            let payload = { user };
-            let token = jwt.sign(payload, jwtSecretKey)
-            res.status(200).send({
-              user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                userType: user.userType
-              },
-              token
-            });  
-          }
-        });
-      }
-    }
-  });
-});
 
 // ENDPOINT: [POST] /members
 router.post('/members', verifySuperAdminToken, (req, res) => {
