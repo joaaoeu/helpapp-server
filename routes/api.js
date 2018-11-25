@@ -160,6 +160,41 @@ router.get('/members', verifySuperAdminToken, (req, res) => {
   });
 });
 
+// ENDPOINT: [PUT] /members
+router.put('/members', verifySuperAdminToken, (req, res) => {
+  let userData = req.body;
+  
+  if(!userData.name || !userData.email || !userData.userType || (userData.userType !== userTypes.ADMIN && userData.userType !== userTypes.DEFAULT)) {
+    res.status(400).send({message: 'Input incorrect!'});
+  } else {
+    if(userData.password) {
+      bcrypt.hash(userData.password, 10, function(err, hash) {
+        userData.password = hash;
+        updateUser(userData, res);
+      });
+    } else {
+      updateUser(userData, res);
+    }
+  }
+});
+
+function updateUser(userData, res) {
+  User.findOneAndUpdate({_id: userData._id}, userData, {new: true}, (err, user) => {
+    if (err) {
+      res.status(400).send(err);
+    } else {
+      res.status(201).send({
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          userType: user.userType
+        }
+      });
+    }
+  });
+}
+
 // ENDPOINT: [DELETE] /members
 router.delete('/members', verifySuperAdminToken, (req, res) => {
   let userData = req.body;
