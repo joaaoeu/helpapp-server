@@ -22,7 +22,14 @@ router.post('/login', (req, res) => {
           if(!equal) {
             res.status(401).send({message: 'Email or password is incorrect!'});
           } else {
-            let payload = { user };
+            let payload = {
+              user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                userType: user.userType
+              }
+            };
             let token = jwt.sign(payload, jwtSecretKey)
             res.status(200).send({
               user: {
