@@ -68,7 +68,7 @@ router.get('/members', verifySuperAdminToken, (req, res) => {
 router.put('/members', verifySuperAdminToken, (req, res) => {
   let userData = req.body;
   
-  if(!userData.name || !userData.email || !userData.userType || (userData.userType !== userTypes.ADMIN && userData.userType !== userTypes.DEFAULT)) {
+  if(!userData._id || !userData.name || !userData.email || !userData.userType || (userData.userType !== userTypes.ADMIN && userData.userType !== userTypes.DEFAULT)) {
     res.status(400).send({message: 'Input incorrect!'});
   } else {
     if(userData.password) {
